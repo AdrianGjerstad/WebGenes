@@ -116,6 +116,10 @@ def _wg_config_configure(attr, value):
           configurations['port'] = int(value, base=0)
       finally:
         pass
+  elif attr == 'public':
+    if not os.path.isdir(value):
+      raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath(value))
+    configurations['public'] = os.path.abspath(value)
   else:
     raise NameError('Cannot resolve attribute name %s. web::ERR_CONFIG_ATTR_NOT_RESOLVED' % (str(attr)))
 
@@ -199,15 +203,22 @@ wg_ConfigGlobals = {
     'callable': callable,
     'delattr': delattr,
     'hasattr': hasattr,
-    'hash': hash,
+    'id': id,
     'len': len,
-    'range': range
+    'range': range,
+    'print': print,
+    'input': input
   }
 }
 
 wg_ConfigLocals = {
   '_configure': _wg_config_configure,
-  '_sudo': _wg_config_sudo
+  '_sudo': _wg_config_sudo,
+  '_isfile': os.path.isfile,
+  '_isdir': os.path.isdir,
+  '_absolute_path': os.path.abspath,
+  '_relative_path': os.path.relpath,
+  '_exists': os.path.exists
 }
 
 ########################################

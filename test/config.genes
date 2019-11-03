@@ -4,6 +4,8 @@
 _configure('ip', '127.0.0.1')
 
 if _sudo:
-  _configure('port', 418)
+  _configure('port', 80)
 else:
   _configure('port', 4180)
+
+_configure('public', _absolute_path('public'))
