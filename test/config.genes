@@ -1,0 +1,9 @@
+# Configurations Script for Test Server
+# NOTE: Any *.genes file is just glorified and sandboxed python3
+
+_configure('ip', '127.0.0.1')
+
+if _sudo:
+  _configure('port', 418)
+else:
+  _configure('port', 4180)
