@@ -5,7 +5,7 @@ _fix_pwd()
 
 _configure('ip', '127.0.0.1')
 
-if _sudo:
+if _SUDO:
   _configure('port', 80)
 else:
   _configure('port', 4180)

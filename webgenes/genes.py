@@ -103,6 +103,35 @@ _wg_fixed_path = ''
 def _wg_config_fix_pwd():
   __wg_config_fix_pwd = True
 
+def _wg_set_ip(value):
+  configurations['ip'] = str(ipaddress.ip_network(value, strict=False).network_address)
+
+  return value
+
+def _wg_set_port(value):
+  if isinstance(value, int):
+    if value <= 1023 and not wg_SuperUser:
+      raise ValueError('Port %i is a priveleged port; cannot open without sudo. web::ERR_CONFIG_NONSUDO_PRIVELEGED_PORT' % value)
+    else:
+      configurations['port'] = value
+  else:
+    try:
+      if int(value, base=0) <= 1023 and not wg_SuperUser:
+        raise ValueError('Port %i is a priveleged port; cannot open without sudo. web::ERR_CONFIG_NONSUDO_PRIVELEGED_PORT' % value)
+      else:
+        configurations['port'] = int(value, base=0)
+    finally:
+      pass
+
+  return value
+
+def _wg_set_public(value):
+  if not os.path.isdir((_wg_fixed_path if _wg_config_fix_pwd else '') + value):
+    raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value))
+  configurations['public'] = os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value)
+
+  return value
+
 def _wg_config_configure(attr, value):
   global configurations
   global _wg_fixed_path
@@ -126,107 +155,125 @@ def _wg_config_configure(attr, value):
   elif attr == 'public':
     if not os.path.isdir((_wg_fixed_path if _wg_config_fix_pwd else '') + value):
       raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value))
-    configurations['public'] = os.path.abspath(value)
+    configurations['public'] = os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value)
   else:
     raise NameError('Cannot resolve attribute name %s. web::ERR_CONFIG_ATTR_NOT_RESOLVED' % (str(attr)))
 
   return value
 
+def _wg_stdout(*args, sep=' ', end='\n', intro='WebGenes Script Output > '):
+  sys.stdout.write(intro)
+  sys.stdout.write(sep.join(list(args)) + end)
+  sys.stdout.flush()
+
+def _wg_stderr(*args, sep=' ', end='\n', intro='WebGenes Script Error > '):
+  sys.stderr.write(intro)
+  sys.stderr.write(sep.join(list(args)) + end)
+  sys.stderr.flush()
+
+def _wg_stdin(*args, sep=' ', intro='WebGenes Script Input > '):
+  sys.stdout.write(intro)
+  sys.stdout.write(sep.join(list(args)))
+  sys.stdout.flush()
+
+  return sys.stdin.readline()
+
 wg_ConfigGlobals = {
-  '__builtins__': {
-    'str': str,
-    'repr': repr,
-    'int': int,
-    'float': float,
-    'bool': bool,
-    'list': list,
-    'tuple': tuple,
-    'isinstance': isinstance,
-    'type': type,
-    'BaseException': BaseException,
-    'Exception': Exception,
-    'TypeError': TypeError,
-    'StopAsyncIteration': StopAsyncIteration,
-    'StopIteration': StopIteration,
-    'GeneratorExit': GeneratorExit,
-    'SystemExit': SystemExit,
-    'KeyboardInterrupt': KeyboardInterrupt,
-    'OSError': OSError,
-    'EnvironmentError': EnvironmentError,
-    'IOError': IOError,
-    'EOFError': EOFError,
-    'RuntimeError': RuntimeError,
-    'RecursionError': RecursionError,
-    'NotImplementedError': NotImplementedError,
-    'NameError': NameError,
-    'UnboundLocalError': UnboundLocalError,
-    'AttributeError': AttributeError,
-    'SyntaxError': SyntaxError,
-    'IndentationError': IndentationError,
-    'TabError': TabError,
-    'LookupError': LookupError,
-    'IndexError': IndexError,
-    'KeyError': KeyError,
-    'ValueError': ValueError,
-    'UnicodeError': UnicodeError,
-    'UnicodeEncodeError': UnicodeEncodeError,
-    'UnicodeDecodeError': UnicodeDecodeError,
-    'UnicodeTranslateError': UnicodeTranslateError,
-    'AssertionError': AssertionError,
-    'ArithmeticError': ArithmeticError,
-    'FloatingPointError': FloatingPointError,
-    'OverflowError': OverflowError,
-    'ZeroDivisionError': ZeroDivisionError,
-    'SystemError': SystemError,
-    'ReferenceError': ReferenceError,
-    'MemoryError': MemoryError,
-    'BufferError': BufferError,
-    'Warning': Warning,
-    'UserWarning': UserWarning,
-    'DeprecationWarning': DeprecationWarning,
-    'PendingDeprecationWarning': PendingDeprecationWarning,
-    'SyntaxWarning': SyntaxWarning,
-    'RuntimeWarning': RuntimeWarning,
-    'FutureWarning': FutureWarning,
-    'ImportWarning': ImportWarning,
-    'UnicodeWarning': UnicodeWarning,
-    'BytesWarning': BytesWarning,
-    'ResourceWarning': ResourceWarning,
-    'ConnectionError': ConnectionError,
-    'BlockingIOError': BlockingIOError,
-    'BrokenPipeError': BrokenPipeError,
-    'ChildProcessError': ChildProcessError,
-    'ConnectionAbortedError': ConnectionAbortedError,
-    'ConnectionRefusedError': ConnectionRefusedError,
-    'ConnectionResetError': ConnectionResetError,
-    'FileExistsError': FileExistsError,
-    'FileNotFoundError': FileNotFoundError,
-    'IsADirectoryError': IsADirectoryError,
-    'NotADirectoryError': NotADirectoryError,
-    'InterruptedError': InterruptedError,
-    'PermissionError': PermissionError,
-    'ProcessLookupError': ProcessLookupError,
-    'TimeoutError': TimeoutError,
-    'callable': callable,
-    'delattr': delattr,
-    'hasattr': hasattr,
-    'id': id,
-    'len': len,
-    'range': range,
-    'print': print,
-    'input': input
-  }
+  '__builtins__': {}
 }
 
 wg_ConfigLocals = {
+  '_BaseException': BaseException,
+  '_Exception': Exception,
+  '_TypeError': TypeError,
+  '_StopAsyncIteration': StopAsyncIteration,
+  '_StopIteration': StopIteration,
+  '_GeneratorExit': GeneratorExit,
+  '_SystemExit': SystemExit,
+  '_KeyboardInterrupt': KeyboardInterrupt,
+  '_OSError': OSError,
+  '_EnvironmentError': EnvironmentError,
+  '_IOError': IOError,
+  '_EOFError': EOFError,
+  '_RuntimeError': RuntimeError,
+  '_RecursionError': RecursionError,
+  '_NotImplementedError': NotImplementedError,
+  '_NameError': NameError,
+  '_UnboundLocalError': UnboundLocalError,
+  '_AttributeError': AttributeError,
+  '_SyntaxError': SyntaxError,
+  '_IndentationError': IndentationError,
+  '_TabError': TabError,
+  '_LookupError': LookupError,
+  '_IndexError': IndexError,
+  '_KeyError': KeyError,
+  '_ValueError': ValueError,
+  '_UnicodeError': UnicodeError,
+  '_UnicodeEncodeError': UnicodeEncodeError,
+  '_UnicodeDecodeError': UnicodeDecodeError,
+  '_UnicodeTranslateError': UnicodeTranslateError,
+  '_AssertionError': AssertionError,
+  '_ArithmeticError': ArithmeticError,
+  '_FloatingPointError': FloatingPointError,
+  '_OverflowError': OverflowError,
+  '_ZeroDivisionError': ZeroDivisionError,
+  '_SystemError': SystemError,
+  '_ReferenceError': ReferenceError,
+  '_MemoryError': MemoryError,
+  '_BufferError': BufferError,
+  '_Warning': Warning,
+  '_UserWarning': UserWarning,
+  '_DeprecationWarning': DeprecationWarning,
+  '_PendingDeprecationWarning': PendingDeprecationWarning,
+  '_SyntaxWarning': SyntaxWarning,
+  '_RuntimeWarning': RuntimeWarning,
+  '_FutureWarning': FutureWarning,
+  '_UnicodeWarning': UnicodeWarning,
+  '_BytesWarning': BytesWarning,
+  '_ResourceWarning': ResourceWarning,
+  '_ConnectionError': ConnectionError,
+  '_BlockingIOError': BlockingIOError,
+  '_BrokenPipeError': BrokenPipeError,
+  '_ChildProcessError': ChildProcessError,
+  '_ConnectionAbortedError': ConnectionAbortedError,
+  '_ConnectionRefusedError': ConnectionRefusedError,
+  '_ConnectionResetError': ConnectionResetError,
+  '_FileExistsError': FileExistsError,
+  '_FileNotFoundError': FileNotFoundError,
+  '_IsADirectoryError': IsADirectoryError,
+  '_NotADirectoryError': NotADirectoryError,
+  '_InterruptedError': InterruptedError,
+  '_PermissionError': PermissionError,
+  '_ProcessLookupError': ProcessLookupError,
+  '_TimeoutError': TimeoutError,
+  '_string': str,
+  '_represent': repr,
+  '_int': int,
+  '_float': float,
+  '_bool': bool,
+  '_array': list,
+  '_isinstance': isinstance,
+  '_type': type,
   '_configure': _wg_config_configure,
-  '_sudo': _wg_config_sudo,
+  '_SUDO': _wg_config_sudo,
   '_fix_pwd': _wg_config_fix_pwd,
   '_isfile': os.path.isfile,
   '_isdir': os.path.isdir,
   '_absolute_path': os.path.abspath,
   '_relative_path': os.path.relpath,
-  '_exists': os.path.exists
+  '_exists': os.path.exists,
+  '_callable': callable,
+  '_delattr': delattr,
+  '_hasattr': hasattr,
+  '_address': id,
+  '_length': len,
+  '_sequence': range,
+  '_stdout': _wg_stdout,
+  '_stderr': _wg_stderr,
+  '_stdin': _wg_stdin,
+  '_set_ip': _wg_set_ip,
+  '_set_port': _wg_set_port,
+  '_set_public': _wg_set_public
 }
 
 ########################################

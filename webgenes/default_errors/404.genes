@@ -1,0 +1,15 @@
+_send('''
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>WebGenes 404</title>
+  </head>
+  <body>
+    <h1 align='center'>WebGenes - 404 Not Found</h1>
+    <hr/>
+    <p align='center'>No resource by the name <code>%s</code> exists.</p>
+  </body>
+</html>
+''' % _PATH)
