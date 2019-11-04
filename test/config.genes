@@ -1,6 +1,8 @@
 # Configurations Script for Test Server
 # NOTE: Any *.genes file is just glorified and sandboxed python3
 
+_fix_pwd()
+
 _configure('ip', '127.0.0.1')
 
 if _sudo:
@@ -8,4 +10,4 @@ if _sudo:
 else:
   _configure('port', 4180)
 
-_configure('public', _absolute_path('public'))
+_configure('public', 'public')

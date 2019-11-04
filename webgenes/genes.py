@@ -96,9 +96,16 @@ wg_SuperUser = os.getuid() == 0
 ########################################
 
 _wg_config_sudo = not not wg_SuperUser
+__wg_config_fix_pwd = False
+global _wg_fixed_path
+_wg_fixed_path = ''
+
+def _wg_config_fix_pwd():
+  __wg_config_fix_pwd = True
 
 def _wg_config_configure(attr, value):
   global configurations
+  global _wg_fixed_path
 
   if attr == 'ip':
     configurations['ip'] = str(ipaddress.ip_network(value, strict=False).network_address)
@@ -117,8 +124,8 @@ def _wg_config_configure(attr, value):
       finally:
         pass
   elif attr == 'public':
-    if not os.path.isdir(value):
-      raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath(value))
+    if not os.path.isdir((_wg_fixed_path if _wg_config_fix_pwd else '') + value):
+      raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value))
     configurations['public'] = os.path.abspath(value)
   else:
     raise NameError('Cannot resolve attribute name %s. web::ERR_CONFIG_ATTR_NOT_RESOLVED' % (str(attr)))
@@ -214,6 +221,7 @@ wg_ConfigGlobals = {
 wg_ConfigLocals = {
   '_configure': _wg_config_configure,
   '_sudo': _wg_config_sudo,
+  '_fix_pwd': _wg_config_fix_pwd,
   '_isfile': os.path.isfile,
   '_isdir': os.path.isdir,
   '_absolute_path': os.path.abspath,
@@ -250,6 +258,9 @@ def wg_Main():
   global configurations
 
   print('\033[1m\033[33mStart WebGenes Script\033[0m')
+
+  global _wg_fixed_path
+  _wg_fixed_path = os.path.dirname(sys.argv[1]) + '/'
 
   wg_RunConfigurationScript()
 
