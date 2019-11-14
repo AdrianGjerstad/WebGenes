@@ -101,6 +101,9 @@ global _wg_fixed_path
 _wg_fixed_path = ''
 
 def _wg_set_ip(value):
+  if value.strip(' \t\n\r') == 'localhost':
+    sys.stdout.write('\033[G\033[K\033[33mConfiguration Warning: Use of ip name `localhost\' instead of `127.0.0.1\'\033[0m\n')
+    value = '127.0.0.1'
   configurations['ip'] = str(ipaddress.ip_network(value, strict=False).network_address)
 
   return value
@@ -134,6 +137,9 @@ def _wg_config_configure(attr, value):
   global _wg_fixed_path
 
   if attr == 'ip':
+    if value.strip(' \t\n\r') == 'localhost':
+      sys.stdout.write('\033[G\033[K\033[33mConfiguration Warning: Use of ip name `localhost\' instead of `127.0.0.1\'\033[0m\n')
+      value = '127.0.0.1' 
     configurations['ip'] = str(ipaddress.ip_network(value, strict=False).network_address)
   elif attr == 'port':
     if isinstance(value, int):
