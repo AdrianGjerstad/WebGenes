@@ -21,6 +21,7 @@ import os
 import sys
 
 # A-Z WEBGENESLIB
+import pycode_sandboxer as wg_Sandboxer
 from webgenes_path import wg_PATH
 from webgenes_exco import wg_ExitCodes
 
@@ -123,8 +124,8 @@ def _wg_set_port(value):
 
 def _wg_set_public(value):
   if not os.path.isdir((_wg_fixed_path if not value.startswith('/') else '') + value):
-    raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value))
-  configurations['public'] = os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value)
+    raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath((_wg_fixed_path if not value.startswith('/') else '') + value))
+  configurations['public'] = os.path.abspath((_wg_fixed_path if not value.startswith('/') else '') + value)
 
   return value
 
@@ -150,8 +151,8 @@ def _wg_config_configure(attr, value):
         pass
   elif attr == 'public':
     if not os.path.isdir((_wg_fixed_path if not value.startswith('/') else '') + value):
-      raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value))
-    configurations['public'] = os.path.abspath((_wg_fixed_path if _wg_config_fix_pwd else '') + value)
+      raise ValueError('There is no directory at %s. web::ERR_CONFIG_NO_DIR' % os.path.abspath((_wg_fixed_path if not value.startswith('/') else '') + value))
+    configurations['public'] = os.path.abspath((_wg_fixed_path if not value.startswith('/') else '') + value)
   else:
     raise NameError('Cannot resolve attribute name %s. web::ERR_CONFIG_ATTR_NOT_RESOLVED' % (str(attr)))
 
@@ -173,10 +174,6 @@ def _wg_stdin(*args, sep=' ', intro='WebGenes Script Input > '):
   sys.stdout.flush()
 
   return sys.stdin.readline().strip('\r\n')
-
-wg_ConfigGlobals = {
-  '__builtins__': {}
-}
 
 wg_ConfigLocals = {
   'BaseException': BaseException,
@@ -281,9 +278,9 @@ def wg_RunConfigurationScript():
     data = f.read()
 
     try:
-      bytecode = compile(data, sys.argv[1], 'exec', dont_inherit=True)
+      sandboxed, code_obj, has_sandboxed = wg_Sandboxer.sandbox(data, __filename__=sys.argv[1], __mode__='exec', __inherit__=False, _import_=False)
 
-      exec(bytecode, wg_ConfigGlobals, wg_ConfigLocals)
+      exec(code_obj, wg_Sandboxer.sandbox_globals(), wg_ConfigLocals)
     except Exception as e:
       print('\033[1m\033[31mAn uncaught error occured in config script.\n')
       import traceback
